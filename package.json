@@ -1,0 +1,27 @@
+{
+  "name": "newbackend1",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [
+    "javascript",
+    "backend"
+  ],
+  "homepage": "https://github.com/Forcebhai/Backend_beginner_project#readme",
+  "bugs": {
+    "url": "https://github.com/Forcebhai/Backend_beginner_project/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Forcebhai/Backend_beginner_project.git"
+  },
+  "license": "ISC",
+  "author": "sayan",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
