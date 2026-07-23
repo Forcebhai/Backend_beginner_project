@@ -3,19 +3,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt"
 
 const userSchema = new Schema({
-
-  id: {
-    type: String,
-    required: true,
-
-  },
-  watchHistory: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "Video"
-    }
-
-  ],
   username: {
     type: String,
     required: true,
@@ -27,6 +14,7 @@ const userSchema = new Schema({
   email: {
     type: String,
     required: true,
+    unique: true,
     lowercase: true,
     trim: true
   },
@@ -37,38 +25,44 @@ const userSchema = new Schema({
     index: true
   },
   avatar: {
-    type: string, // cloudnary url images
+    type: String, // cloudinary url images
     required: true
   },
   coverImage: {
-    type: String, // cloudnary url images
-    required: true
+    type: String, // cloudinary url images
   },
+  watchHistory: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Video"
+    }
+  ],
   password: {
     type: String,
     required: [true, "password is required"]
   },
   refreshToken: {
-    type: String,
-    required: [true, 'Refresh token is required'],
+    type: String
   }
 }, { timestamps: true })
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
-    return next() // this field show that if password is not modified then donot change or bcrypt password !
-  }
-  this.password = bcrypt.hash(this.password, 10)
-  next()
+// PROBLEM: In Mongoose 6+, when using an `async` function in `pre("save")`, Mongoose handles completion via Promises.
+// Passing and calling `next()` inside an `async` function causes `TypeError: next is not a function` because Kareem (Mongoose's middleware runner) does not pass a `next` callback to async functions.
+// FIX: Removed `next` parameter and `next()` calls. Using `return` early if password is not modified and `await` for hashing.
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+
+  this.password = await bcrypt.hash(this.password, 10);
 })
 
-//coustom methods 
+// custom methods 
+
 
 userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password)
 }
 
-userSchema.method.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       _id: this._id,
@@ -83,7 +77,7 @@ userSchema.method.generateAccessToken = function () {
   )
 }
 
-userSchema.method.generateRefreshToken = function () {
+userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {
       _id: this._id
