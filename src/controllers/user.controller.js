@@ -19,8 +19,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
   const { fullname, username, email, password } = req.body
-  console.log("email: ", email)
-  console.log("body", req.body)
+  // console.log("email: ", email)
+  // console.log("body", req.body)
 
   if (fullname === "") {
     throw new ApiError(400, "Fullname is required")
@@ -43,6 +43,7 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Password is too short");
   }
 
+  // checking the existing user 
   const existedUser = await User.findOne({
     $or: [{ username }, { email }]
   })
@@ -50,13 +51,27 @@ const registerUser = asyncHandler(async (req, res) => {
   if (existedUser) {
     throw new ApiError(409, "User already exists")
   }
-  const avatarLocalPath = req.files?.avatar?.[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
 
+
+  // here we are taking out the local path of avatar // take from multer 
+  const avatarLocalPath = req.files?.avatar?.[0]?.path;
+  // const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
+
+
+  // taking the coverimage also // take from multer 
+  let coverImageLocalPath;
+  if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+    coverImageLocalPath = req.files.coverImage[0]?.path;
+  }
+
+  // if avatar local path not present then throw error // not allowed 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is required");
   }
 
+
+  // if avatar is available then upload on cloudnary 
+  // and same for coverimage 
   const avatar = await uploadOnCloudinary(avatarLocalPath)
   const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
@@ -64,6 +79,8 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Error while uploading the files")
   }
 
+  // if every thing is available then  create an object 
+  // by using model 
   const user = await User.create({
     fullname,
     avatar: avatar.url,
@@ -73,10 +90,14 @@ const registerUser = asyncHandler(async (req, res) => {
     username: username.toLowerCase()
   })
 
+
+  // delete the passord and refresh token from response for security reason
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
   )
 
+
+  // if user not created then throw error
   if (!createdUser) {
     throw new ApiError(500, "Error while creating user")
   }
